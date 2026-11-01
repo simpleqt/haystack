@@ -4,6 +4,7 @@
 
 import json
 import os
+from copy import deepcopy
 
 import pytest
 
@@ -235,6 +236,27 @@ class TestAgentTool:
         assert agent_tool.outputs_to_string == {"handler": agent_result_to_string}
         assert agent_tool.outputs_to_state == {"notes": {"source": "last_message"}}
         assert agent_tool.to_dict()["data"]["parameters"] is None
+
+    def test_from_dict_preserves_input(self):
+        sub_agent = Agent(chat_generator=MockChatGenerator(response_fn=_echo_last_message))
+        agent_tool = AgentTool(
+            agent=sub_agent,
+            name="research",
+            description="Research a question.",
+            outputs_to_state={"notes": {"source": "last_message"}},
+        )
+
+        data = agent_tool.to_dict()
+        snapshot = deepcopy(data)
+
+        restored = AgentTool.from_dict(data)
+        assert data == snapshot
+
+        # the same dictionary can be deserialized more than once
+        restored_again = AgentTool.from_dict(data)
+        assert restored.outputs_to_string == restored_again.outputs_to_string
+        assert restored.outputs_to_state == restored_again.outputs_to_state
+        assert data == snapshot
 
     def test_from_dict_with_explicit_parameters(self):
         parameters = {

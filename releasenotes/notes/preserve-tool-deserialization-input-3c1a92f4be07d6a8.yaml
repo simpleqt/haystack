@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    ``Tool.from_dict()``, ``ComponentTool.from_dict()``, ``PipelineTool.from_dict()``, and
+    ``AgentTool.from_dict()`` now preserve the supplied serialized configuration, so the same
+    dictionary can be loaded more than once and keeps holding serialized callables instead of
+    live functions after deserialization.

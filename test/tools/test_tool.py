@@ -4,6 +4,7 @@
 
 import re
 import threading
+from copy import deepcopy
 from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, Mock
@@ -521,6 +522,26 @@ class TestToolAsync:
         tool = Tool.from_dict(legacy)
         assert tool.function is get_weather_report
         assert tool.async_function is None
+
+    def test_from_dict_preserves_input(self):
+        tool = Tool(
+            name="weather",
+            description="Get weather report",
+            parameters=parameters,
+            function=get_weather_report,
+            outputs_to_state={"report": {"source": "result", "handler": format_string}},
+            outputs_to_string={"handler": outputs_to_result_handler, "raw_result": True},
+        )
+        data = tool.to_dict()
+        snapshot = deepcopy(data)
+
+        restored = Tool.from_dict(data)
+        assert data == snapshot
+
+        # the same dictionary can be deserialized more than once
+        restored_again = Tool.from_dict(data)
+        assert restored.invoke(city="Berlin") == restored_again.invoke(city="Berlin")
+        assert data == snapshot
 
 
 def test_check_duplicate_tool_names():

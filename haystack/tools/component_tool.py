@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any, get_args, get_origin
 
 from pydantic import Field, TypeAdapter, create_model
@@ -319,7 +320,9 @@ class ComponentTool(Tool):
         """
         Deserializes the ComponentTool from a dictionary.
         """
-        inner_data = data["data"]
+        # Copy so the caller's data keeps the serialized component and handlers and can be deserialized again
+        inner_data = dict(data["data"])
+        inner_data["component"] = deepcopy(inner_data["component"])
         deserialize_component_inplace(data=inner_data, key="component")
 
         if "outputs_to_state" in inner_data and inner_data["outputs_to_state"]:
@@ -332,10 +335,10 @@ class ComponentTool(Tool):
             component=inner_data["component"],
             name=inner_data["name"],
             description=inner_data["description"],
-            parameters=inner_data.get("parameters", None),
-            outputs_to_string=inner_data.get("outputs_to_string", None),
-            inputs_from_state=inner_data.get("inputs_from_state", None),
-            outputs_to_state=inner_data.get("outputs_to_state", None),
+            parameters=inner_data.get("parameters"),
+            outputs_to_string=inner_data.get("outputs_to_string"),
+            inputs_from_state=inner_data.get("inputs_from_state"),
+            outputs_to_state=inner_data.get("outputs_to_state"),
         )
 
     def _create_tool_parameters_schema(self, component: Component, inputs_from_state: dict[str, Any]) -> dict[str, Any]:

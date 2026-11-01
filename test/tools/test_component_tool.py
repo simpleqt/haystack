@@ -4,6 +4,7 @@
 
 import json
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Annotated, Any
 from unittest.mock import AsyncMock, Mock, patch
@@ -837,6 +838,28 @@ class TestComponentToolInAgent:
         assert new_tool.inputs_from_state == tool.inputs_from_state
         assert new_tool.outputs_to_state == tool.outputs_to_state
         assert isinstance(new_tool._component, SimpleComponent)
+
+    def test_from_dict_preserves_input(self):
+        tool = ComponentTool(
+            component=SimpleComponent(),
+            name="simple_tool",
+            description="A simple tool",
+            outputs_to_string={"source": "reply", "handler": reply_formatter},
+            inputs_from_state={"test": "text"},
+            outputs_to_state={"output": {"source": "reply", "handler": output_handler}},
+        )
+
+        data = tool.to_dict()
+        snapshot = deepcopy(data)
+
+        restored = ComponentTool.from_dict(data)
+        assert data == snapshot
+
+        # the same dictionary can be deserialized more than once
+        restored_again = ComponentTool.from_dict(data)
+        assert restored.outputs_to_string == restored_again.outputs_to_string
+        assert restored.outputs_to_state == restored_again.outputs_to_state
+        assert data == snapshot
 
     def test_pipeline_component_fails(self):
         comp = SimpleComponent()

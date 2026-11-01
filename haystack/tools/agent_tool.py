@@ -4,6 +4,7 @@
 
 import json
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any
 
 from haystack.components.agents import Agent
@@ -257,7 +258,9 @@ class AgentTool(ComponentTool):
         :returns:
             The deserialized AgentTool instance.
         """
-        inner_data = data["data"]
+        # Copy so the caller's data keeps the serialized agent and handlers and can be deserialized again
+        inner_data = dict(data["data"])
+        inner_data["agent"] = deepcopy(inner_data["agent"])
         deserialize_component_inplace(data=inner_data, key="agent")
 
         outputs_to_state = inner_data.get("outputs_to_state")

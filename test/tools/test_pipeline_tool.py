@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from copy import deepcopy
 from unittest.mock import ANY
 
 import pytest
@@ -46,6 +47,10 @@ class MockSimilarityRanker:
         """
         ranked = documents[:top_k] if top_k is not None else documents
         return {"documents": ranked}
+
+
+def _upper(result):
+    return str(result).upper()
 
 
 @pytest.fixture
@@ -155,6 +160,27 @@ class TestPipelineTool:
 
         recreated_tool = PipelineTool.from_dict(tool_dict)
         assert isinstance(recreated_tool._pipeline, Pipeline)
+
+    def test_from_dict_preserves_input(self, sample_pipeline):
+        tool = PipelineTool(
+            pipeline=sample_pipeline,
+            input_mapping={"query": ["bm25_retriever.query"]},
+            output_mapping={"ranker.documents": "documents"},
+            name="test_tool",
+            description="A test tool",
+            outputs_to_string={"handler": _upper},
+        )
+
+        data = tool.to_dict()
+        snapshot = deepcopy(data)
+
+        restored = PipelineTool.from_dict(data)
+        assert data == snapshot
+
+        # the same dictionary can be deserialized more than once
+        restored_again = PipelineTool.from_dict(data)
+        assert restored.outputs_to_string == restored_again.outputs_to_string
+        assert data == snapshot
 
     def test_auto_generated_tool_params(self, sample_pipeline):
         tool = PipelineTool(
